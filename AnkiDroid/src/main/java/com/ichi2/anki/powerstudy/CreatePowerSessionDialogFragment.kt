@@ -5,12 +5,12 @@ package com.ichi2.anki.powerstudy
 import android.app.Dialog
 import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
-import androidx.core.os.BundleCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.setFragmentResult
 import com.ichi2.anki.CommonString
 import com.ichi2.anki.R
 import com.ichi2.anki.browser.IdsFile
+import com.ichi2.anki.utils.ext.getParcelableCompat
 import com.ichi2.utils.input
 import com.ichi2.utils.negativeButton
 import com.ichi2.utils.positiveButton
@@ -21,7 +21,7 @@ class CreatePowerSessionDialogFragment : DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val idsFile =
             requireNotNull(
-                BundleCompat.getParcelable(requireArguments(), ARG_CARD_IDS_FILE, IdsFile::class.java),
+                requireArguments().getParcelableCompat<IdsFile>(ARG_CARD_IDS_FILE),
             )
         return AlertDialog
             .Builder(requireContext())
