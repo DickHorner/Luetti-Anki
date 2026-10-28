@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <string name="power_study_action">Power study</string>
+    <string name="power_study_title">Power study</string>
+    <string name="power_study_show_answer">Show answer</string>
+    <string name="power_study_wrong">Don\'t know</string>
+    <string name="power_study_correct">Know it</string>
+    <string name="power_study_complete">Power session complete</string>
+    <string name="power_study_progress">New %1$d · B1 %2$d · B2 %3$d · B3 %4$d · B4 %5$d · B5 %6$d · B6 %7$d</string>
+</resources>

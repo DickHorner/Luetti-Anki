@@ -90,6 +90,11 @@
     />
 
     <item
+        android:id="@+id/action_power_study"
+        android:icon="@drawable/ic_grading"
+        android:title="@string/power_study_action"/>
+
+    <item
         android:id="@+id/action_export_selected"
         android:icon="@drawable/ic_export_notes"
         tools:title="Export cards"/>

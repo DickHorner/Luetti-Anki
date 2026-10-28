@@ -5,6 +5,7 @@ package com.ichi2.anki.powerstudy
 const val POWER_STUDY_BOX_COUNT = 6
 const val POWER_STUDY_INACTIVE_BOX = 0
 const val DEFAULT_POWER_STUDY_ACTIVATION_LIMIT = 30
+val DEFAULT_POWER_STUDY_BOX_WEIGHTS = listOf(50, 20, 12, 8, 8, 2)
 
 data class PowerCardState(
     val cardId: Long,

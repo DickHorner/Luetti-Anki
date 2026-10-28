@@ -127,6 +127,7 @@ import com.ichi2.anki.libanki.DeckId
 import com.ichi2.anki.libanki.undoAvailable
 import com.ichi2.anki.libanki.undoLabel
 import com.ichi2.anki.model.CardStateFilter
+import com.ichi2.anki.powerstudy.PowerStudyFragment
 import com.ichi2.anki.model.CardsOrNotes.CARDS
 import com.ichi2.anki.model.SelectableDeck
 import com.ichi2.anki.observability.ChangeManager
@@ -774,6 +775,7 @@ class CardBrowserFragment :
                     menu.findItem(R.id.action_reschedule_cards).isVisible = vm.hasSelectedAnyRows()
                     menu.findItem(R.id.action_edit_tags).isVisible = vm.hasSelectedAnyRows()
                     menu.findItem(R.id.action_reset_cards_progress).isVisible = vm.hasSelectedAnyRows()
+                    menu.findItem(R.id.action_power_study).isVisible = vm.hasSelectedAnyRows()
 
                     menu.findItem(R.id.action_export_selected).apply {
                         this.title =
@@ -887,6 +889,10 @@ class CardBrowserFragment :
                         }
                         R.id.action_preview_many -> {
                             onPreview()
+                            return true
+                        }
+                        R.id.action_power_study -> {
+                            onPowerStudy()
                             return true
                         }
                         R.id.action_edit_note -> {
@@ -1619,6 +1625,20 @@ class CardBrowserFragment :
     fun onPreview() {
         launchCatchingTask {
             val intent = activityViewModel.queryPreviewIntentData().toIntent(requireContext())
+            startActivity(intent)
+        }
+    }
+
+    fun onPowerStudy() {
+        launchCatchingTask {
+            val cardIds = activityViewModel.queryAllSelectedCardIds()
+            if (cardIds.isEmpty()) return@launchCatchingTask
+
+            val intent =
+                PowerStudyFragment.getIntent(
+                    context = requireContext(),
+                    idsFile = IdsFile(requireContext().cacheDir, cardIds),
+                )
             startActivity(intent)
         }
     }
