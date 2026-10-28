@@ -26,6 +26,9 @@
         android:id="@+id/action_list_my_searches"
         android:title="@string/card_browser_list_my_searches"/>
     <item
+        android:id="@+id/action_power_sessions"
+        android:title="@string/power_study_sessions"/>
+    <item
         android:id="@+id/action_sort_by_size"
         android:title="@string/card_browser_change_display_order"/>
     <item
