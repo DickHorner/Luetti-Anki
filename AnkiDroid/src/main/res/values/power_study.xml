@@ -2,6 +2,12 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <resources>
     <string name="power_study_action">Power study</string>
+    <string name="power_study_sessions">Power sessions</string>
+    <string name="power_study_new_session">New power session</string>
+    <string name="power_study_session_name">Session name</string>
+    <string name="power_study_no_sessions">No active power sessions</string>
+    <string name="power_study_session_unavailable">Power session is no longer available</string>
+    <string name="power_study_session_list_item">%1$s · %2$d cards</string>
     <string name="power_study_title">Power study</string>
     <string name="power_study_show_answer">Show answer</string>
     <string name="power_study_wrong">Don\'t know</string>
