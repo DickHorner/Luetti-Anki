@@ -13,9 +13,7 @@ import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.ichi2.anki.CommonString
 import com.ichi2.anki.R
-import com.ichi2.anki.browser.IdsFile
 import com.ichi2.anki.common.utils.android.showThemedToast
 import com.ichi2.anki.databinding.FragmentPowerStudyBinding
 import com.ichi2.anki.previewer.CardViewerActivity
@@ -26,21 +24,17 @@ import dev.androidbroadcast.vbpd.viewBinding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.io.IOException
 
 class PowerStudyFragment : CardViewerFragment(R.layout.fragment_power_study) {
     override val viewModel: PowerStudyViewModel by viewModels {
         viewModelFactory {
             initializer {
                 val handle = createSavedStateHandle()
-                val ids =
-                    try {
-                        handle.require<IdsFile>(CARD_IDS_FILE_ARG).getIds()
-                    } catch (e: IOException) {
-                        throw UnavailableSelectionException(e)
-                    }
-                if (ids.isEmpty()) throw UnavailableSelectionException()
-                PowerStudyViewModel(handle, ids)
+                val sessionId = handle.require<String>(SESSION_ID_ARG)
+                val store = PowerSessionStore(requireContext())
+                val session = store.get(sessionId) ?: throw UnavailableSessionException()
+                if (session.isComplete) throw UnavailableSessionException()
+                PowerStudyViewModel(handle, session, store)
             }
         }
     }
@@ -55,9 +49,9 @@ class PowerStudyFragment : CardViewerFragment(R.layout.fragment_power_study) {
     ) {
         try {
             viewModel
-        } catch (e: UnavailableSelectionException) {
-            Timber.w(e, "Failed to read power study IDs")
-            showThemedToast(requireContext(), CommonString.something_wrong, false)
+        } catch (e: UnavailableSessionException) {
+            Timber.w(e, "Failed to load power study session")
+            showThemedToast(requireContext(), R.string.power_study_session_unavailable, false)
             view.isVisible = false
             requireActivity().finish()
             return
@@ -65,6 +59,7 @@ class PowerStudyFragment : CardViewerFragment(R.layout.fragment_power_study) {
 
         super.onViewCreated(view, savedInstanceState)
 
+        binding.toolbar.title = viewModel.session.value.name
         binding.toolbar.setNavigationOnClickListener {
             requireActivity().onBackPressedDispatcher.onBackPressed()
         }
@@ -112,20 +107,18 @@ class PowerStudyFragment : CardViewerFragment(R.layout.fragment_power_study) {
         }
     }
 
-    private class UnavailableSelectionException(
-        cause: IOException? = null,
-    ) : Exception("Unable to load power study selection", cause)
+    private class UnavailableSessionException : Exception("Unable to load power study session")
 
     companion object {
-        const val CARD_IDS_FILE_ARG = "powerStudyCardIdsFile"
+        const val SESSION_ID_ARG = "powerStudySessionId"
 
         fun getIntent(
             context: Context,
-            idsFile: IdsFile,
+            sessionId: String,
         ): Intent {
             val arguments =
                 Bundle().apply {
-                    putParcelable(CARD_IDS_FILE_ARG, idsFile)
+                    putString(SESSION_ID_ARG, sessionId)
                 }
             return CardViewerActivity.getIntent(context, PowerStudyFragment::class, arguments)
         }
