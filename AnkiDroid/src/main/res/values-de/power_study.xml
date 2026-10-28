@@ -2,6 +2,12 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <resources>
     <string name="power_study_action">Power lernen</string>
+    <string name="power_study_sessions">Power-Sessions</string>
+    <string name="power_study_new_session">Neue Power-Session</string>
+    <string name="power_study_session_name">Name der Session</string>
+    <string name="power_study_no_sessions">Keine aktiven Power-Sessions</string>
+    <string name="power_study_session_unavailable">Power-Session ist nicht mehr verfügbar</string>
+    <string name="power_study_session_list_item">%1$s · %2$d Karten</string>
     <string name="power_study_title">Power lernen</string>
     <string name="power_study_show_answer">Antwort zeigen</string>
     <string name="power_study_wrong">Nicht gewusst</string>
