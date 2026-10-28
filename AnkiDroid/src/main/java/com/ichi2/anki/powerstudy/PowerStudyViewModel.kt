@@ -5,6 +5,7 @@ package com.ichi2.anki.powerstudy
 import androidx.lifecycle.SavedStateHandle
 import com.ichi2.anki.CollectionManager.withCol
 import com.ichi2.anki.asyncIO
+import com.ichi2.anki.launchCatchingIO
 import com.ichi2.anki.libanki.Card
 import com.ichi2.anki.pages.AnkiServer
 import com.ichi2.anki.previewer.CardViewerViewModel
@@ -12,31 +13,32 @@ import com.ichi2.anki.previewer.TypeAnswer
 import com.ichi2.anki.reviewer.CardSide
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class PowerStudyViewModel(
     savedStateHandle: SavedStateHandle,
-    cardIds: List<Long>,
+    initialSession: PowerSession,
+    private val store: PowerSessionStore,
 ) : CardViewerViewModel(savedStateHandle) {
     private val engine = PowerStudyEngine()
-    val session =
-        MutableStateFlow(
-            engine.createSession(
-                id = "temporary",
-                name = "Power study",
-                cardIds = cardIds,
-                boxWeights = DEFAULT_POWER_STUDY_BOX_WEIGHTS,
-            ),
-        )
-    val isComplete = MutableStateFlow(false)
+    private val answerMutex = Mutex()
 
-    private fun nextCardId(): Long =
-        checkNotNull(engine.nextCard(session.value)) {
-            "Power study session has no active card"
+    private val resumedSession =
+        if (initialSession.currentCardId == null) {
+            initialSession
+                .copy(currentCardId = checkNotNull(engine.nextCard(initialSession)))
+                .also(store::save)
+        } else {
+            initialSession
         }
+
+    val session = MutableStateFlow(resumedSession)
+    val isComplete = MutableStateFlow(false)
 
     override var currentCard: Deferred<Card> =
         asyncIO {
-            withCol { getCard(nextCardId()) }
+            withCol { getCard(checkNotNull(session.value.currentCardId)) }
         }
 
     override val server = AnkiServer(this).also { it.start() }
@@ -67,28 +69,34 @@ class PowerStudyViewModel(
 
     private fun answer(correct: Boolean) {
         launchCatchingIO {
-            if (isComplete.value) return@launchCatchingIO
+            answerMutex.withLock {
+                if (isComplete.value) return@withLock
 
-            val cardId = currentCard.await().id
-            session.value =
-                if (correct) {
-                    engine.answerCorrect(session.value, cardId)
-                } else {
-                    engine.answerWrong(session.value, cardId)
+                val cardId = currentCard.await().id
+                val answeredSession =
+                    if (correct) {
+                        engine.answerCorrect(session.value, cardId)
+                    } else {
+                        engine.answerWrong(session.value, cardId)
+                    }
+
+                val nextCardId = engine.nextCard(answeredSession)
+                val updatedSession = answeredSession.copy(currentCardId = nextCardId)
+                store.save(updatedSession)
+                session.value = updatedSession
+
+                if (nextCardId == null) {
+                    isComplete.value = true
+                    return@withLock
                 }
 
-            val nextCardId = engine.nextCard(session.value)
-            if (nextCardId == null) {
-                isComplete.emit(true)
-                return@launchCatchingIO
+                currentCard =
+                    asyncIO {
+                        withCol { getCard(nextCardId) }
+                    }
+                showQuestion()
+                loadAndPlayMedia(CardSide.QUESTION)
             }
-
-            currentCard =
-                asyncIO {
-                    withCol { getCard(nextCardId) }
-                }
-            showQuestion()
-            loadAndPlayMedia(CardSide.QUESTION)
         }
     }
 
