@@ -35,6 +35,7 @@ import androidx.appcompat.widget.ThemeUtils
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.DrawableCompat
+import androidx.core.os.BundleCompat
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuHostHelper
 import androidx.core.view.MenuProvider
@@ -127,6 +128,11 @@ import com.ichi2.anki.libanki.DeckId
 import com.ichi2.anki.libanki.undoAvailable
 import com.ichi2.anki.libanki.undoLabel
 import com.ichi2.anki.model.CardStateFilter
+import com.ichi2.anki.powerstudy.CreatePowerSessionDialogFragment
+import com.ichi2.anki.powerstudy.DEFAULT_POWER_STUDY_BOX_WEIGHTS
+import com.ichi2.anki.powerstudy.PowerSessionStore
+import com.ichi2.anki.powerstudy.PowerSessionsDialogFragment
+import com.ichi2.anki.powerstudy.PowerStudyEngine
 import com.ichi2.anki.powerstudy.PowerStudyFragment
 import com.ichi2.anki.model.CardsOrNotes.CARDS
 import com.ichi2.anki.model.SelectableDeck
@@ -664,6 +670,10 @@ class CardBrowserFragment :
                         }
                         R.id.action_list_my_searches -> {
                             showSavedSearches()
+                            return true
+                        }
+                        R.id.action_power_sessions -> {
+                            showPowerSessions()
                             return true
                         }
                         R.id.action_undo -> {
@@ -1312,6 +1322,52 @@ class CardBrowserFragment :
                 shift = bundle.getBoolean(RepositionCardFragment.ARG_SHIFT),
             )
         }
+
+        parentFragmentManager.setFragmentResultListener(
+            CreatePowerSessionDialogFragment.REQUEST_CREATE_SESSION,
+            viewLifecycleOwner,
+        ) { _, bundle ->
+            val idsFile =
+                BundleCompat.getParcelable(
+                    bundle,
+                    CreatePowerSessionDialogFragment.ARG_CARD_IDS_FILE,
+                    IdsFile::class.java,
+                ) ?: return@setFragmentResultListener
+            val name =
+                bundle.getString(CreatePowerSessionDialogFragment.ARG_SESSION_NAME)
+                    ?: return@setFragmentResultListener
+
+            launchCatchingTask {
+                val cardIds = idsFile.getIds()
+                if (cardIds.isEmpty()) return@launchCatchingTask
+
+                val engine = PowerStudyEngine()
+                val created =
+                    engine.createSession(
+                        id = UUID.randomUUID().toString(),
+                        name = name,
+                        cardIds = cardIds,
+                        boxWeights = DEFAULT_POWER_STUDY_BOX_WEIGHTS,
+                    )
+                val session = created.copy(currentCardId = checkNotNull(engine.nextCard(created)))
+                PowerSessionStore(requireContext()).save(session)
+                startPowerSession(session.id)
+            }
+        }
+
+        parentFragmentManager.setFragmentResultListener(
+            PowerSessionsDialogFragment.REQUEST_OPEN_SESSION,
+            viewLifecycleOwner,
+        ) { _, bundle ->
+            val sessionId =
+                bundle.getString(PowerSessionsDialogFragment.ARG_SESSION_ID)
+                    ?: return@setFragmentResultListener
+            if (PowerSessionStore(requireContext()).get(sessionId) == null) {
+                showSnackbar(R.string.power_study_session_unavailable)
+                return@setFragmentResultListener
+            }
+            startPowerSession(sessionId)
+        }
     }
 
     override fun opExecuted(
@@ -1634,13 +1690,18 @@ class CardBrowserFragment :
             val cardIds = activityViewModel.queryAllSelectedCardIds()
             if (cardIds.isEmpty()) return@launchCatchingTask
 
-            val intent =
-                PowerStudyFragment.getIntent(
-                    context = requireContext(),
-                    idsFile = IdsFile(requireContext().cacheDir, cardIds),
-                )
-            startActivity(intent)
+            CreatePowerSessionDialogFragment
+                .newInstance(IdsFile(requireContext().cacheDir, cardIds))
+                .show(parentFragmentManager, CreatePowerSessionDialogFragment.TAG)
         }
+    }
+
+    fun showPowerSessions() {
+        PowerSessionsDialogFragment().show(parentFragmentManager, PowerSessionsDialogFragment.TAG)
+    }
+
+    private fun startPowerSession(sessionId: String) {
+        startActivity(PowerStudyFragment.getIntent(requireContext(), sessionId))
     }
 
     fun rescheduleSelectedCards() {
