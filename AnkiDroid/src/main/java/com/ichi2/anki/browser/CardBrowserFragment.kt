@@ -1341,7 +1341,7 @@ class CardBrowserFragment :
                 val engine = PowerStudyEngine()
                 val created =
                     engine.createSession(
-                        id = UUID.randomUUID().toString(),
+                        id = java.util.UUID.randomUUID().toString(),
                         name = name,
                         cardIds = cardIds,
                         boxWeights = DEFAULT_POWER_STUDY_BOX_WEIGHTS,
