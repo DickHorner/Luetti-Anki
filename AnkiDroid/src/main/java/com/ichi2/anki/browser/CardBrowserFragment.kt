@@ -35,7 +35,6 @@ import androidx.appcompat.widget.ThemeUtils
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.DrawableCompat
-import androidx.core.os.BundleCompat
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuHostHelper
 import androidx.core.view.MenuProvider
@@ -128,14 +127,14 @@ import com.ichi2.anki.libanki.DeckId
 import com.ichi2.anki.libanki.undoAvailable
 import com.ichi2.anki.libanki.undoLabel
 import com.ichi2.anki.model.CardStateFilter
+import com.ichi2.anki.model.CardsOrNotes.CARDS
+import com.ichi2.anki.model.SelectableDeck
 import com.ichi2.anki.powerstudy.CreatePowerSessionDialogFragment
 import com.ichi2.anki.powerstudy.DEFAULT_POWER_STUDY_BOX_WEIGHTS
 import com.ichi2.anki.powerstudy.PowerSessionStore
 import com.ichi2.anki.powerstudy.PowerSessionsDialogFragment
 import com.ichi2.anki.powerstudy.PowerStudyEngine
 import com.ichi2.anki.powerstudy.PowerStudyFragment
-import com.ichi2.anki.model.CardsOrNotes.CARDS
-import com.ichi2.anki.model.SelectableDeck
 import com.ichi2.anki.observability.ChangeManager
 import com.ichi2.anki.previewer.PreviewerFragment
 import com.ichi2.anki.progress.observeProgress
@@ -1328,10 +1327,8 @@ class CardBrowserFragment :
             viewLifecycleOwner,
         ) { _, bundle ->
             val idsFile =
-                BundleCompat.getParcelable(
-                    bundle,
+                bundle.getParcelableCompat<IdsFile>(
                     CreatePowerSessionDialogFragment.ARG_CARD_IDS_FILE,
-                    IdsFile::class.java,
                 ) ?: return@setFragmentResultListener
             val name =
                 bundle.getString(CreatePowerSessionDialogFragment.ARG_SESSION_NAME)
